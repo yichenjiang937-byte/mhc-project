@@ -28,8 +28,16 @@ isoforms included). Useful options:
 --reference-shard shard defining the column layout (default: mhc_ligand_full_00.csv)
 --fasta           use a local proteome FASTA instead of downloading
 --no-download     fail if the proteome is missing
+--modality        all (default) | eluted | binding
 -v, --verbose     verbose logging
 ```
+
+`--modality` is orthogonal to the evidence ranking used to pick a
+representative record: it selects *which kind of evidence* the tables are built
+from. The default labels every record in the `Assay_Modality` column without
+dropping any; `--modality eluted` keeps only mass-spectrometry elution data,
+which is the right input when the question is about presentation rather than
+in vitro affinity.
 
 On Windows, `build_exe.bat` builds the standalone executable; copy the input
 files next to `MHC_Data_Processor.exe` before running it.
@@ -40,4 +48,5 @@ files next to `MHC_Data_Processor.exe` before running it.
 - `Class_II_HomoSapiens_Gold_Gene.csv` — restrictions matching `HLA-D`
 
 Columns: peptide, start, end, gene name, UniProt accession, HLA restriction,
-and `Record_Count` (number of independent records supporting the entry).
+`Record_Count` (number of independent records supporting the entry), and
+`Assay_Modality` (`eluted` / `binding` / `other`).

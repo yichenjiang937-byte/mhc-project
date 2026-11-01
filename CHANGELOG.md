@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-11 — Evidence modality
+
+Adds an explicit description of *what kind* of evidence each record represents,
+which the previous evidence ranking conflated.
+
+- New `Assay_Modality` column: `eluted` (mass-spectrometry elution),
+  `binding` (in vitro binding assays) or `other` (structural / functional
+  assays).
+- New `--modality {all,eluted,binding}` option. The default, `all`, keeps every
+  record and only labels it, so the published tables are reproduced unchanged.
+- The modality is intentionally **not** part of the representative-selection
+  ranking. The two questions are separate: "which record represents this
+  presentation unit" and "what kind of evidence supports it".
+
+Backwards compatibility: the default run produces the same rows in the same
+order with identical values in every existing column; the only difference is
+the appended `Assay_Modality` column. Verified on `mhc_ligand_full_00.csv`
+(59,083 class I and 22,227 class II rows, original columns identical).
+`--modality eluted` yields 57,055 class I and 19,567 class II rows on the same
+shard.
+
 ## 2026-11 — Refactor and hardening
 
 A quality pass over both tools. **Filtering behaviour is unchanged**: the

@@ -75,6 +75,7 @@ Command-line options:
 | `--reference-shard` | Shard that defines the canonical column layout (default `mhc_ligand_full_00.csv`) |
 | `--fasta` | Pre-downloaded human proteome FASTA |
 | `--no-download` | Do not download the proteome |
+| `--modality` | `all` (default), `eluted`, or `binding` — see [Evidence modality](#evidence-modality) |
 | `-v`, `--verbose` | Verbose logging |
 
 On Windows, `build_exe.bat` produces a standalone `MHC_Data_Processor.exe`.
@@ -138,6 +139,25 @@ Raw inputs and the generated gold tables are archived on
 | `Mapped_Protein_ID` | Validated UniProt accession |
 | `MHC Restriction_Name` | HLA restriction as reported by IEDB |
 | `Record_Count` | Number of independent records for this presentation unit |
+| `Assay_Modality` | `eluted`, `binding` or `other` — the kind of evidence behind the retained record |
+
+### Evidence modality
+
+Records come from two scientifically different kinds of experiment, and mixing
+them makes `Record_Count` mean two things at once:
+
+| Modality | IEDB assay examples | What it establishes |
+| --- | --- | --- |
+| `eluted` | `cellular mhc/mass spectrometry`, `secreted mhc/mass spectrometry`, `coelution` | The peptide was processed and presented by a cell |
+| `binding` | `purified mhc/competitive/radioactivity`, `purified mhc/direct/fluorescence`, `binding assay` | The peptide binds the allele in vitro |
+| `other` | `x-ray crystallography`, `edman degradation`, T-cell assays | Neither |
+
+The default, `--modality all`, keeps every record and only labels it, which is
+the behaviour used for the published tables. `--modality eluted` restricts the
+gold tables to elution evidence, which is the appropriate input when the
+analysis is about presentation rather than binding affinity. On a single-shard
+test this retained 96.6% of class I records, and the top-20 gene ranking
+overlapped 19 of 20 entries with the unrestricted run.
 
 ---
 

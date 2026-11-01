@@ -66,6 +66,26 @@ PRIMARY_METHOD_TERMS: Tuple[str, ...] = ("mass spec", "purified", "fp", "elisa")
 METHOD_TIER_PRIMARY = 1
 METHOD_TIER_FALLBACK = 2
 
+# Evidence modality. This describes *what kind* of evidence a record represents
+# and is kept orthogonal to the representative-selection ranking above: it is
+# used for optional stratification, never mixed into the ranking.
+MODALITY_ALL = "all"
+MODALITY_ELUTED = "eluted"
+MODALITY_BINDING = "binding"
+MODALITY_OTHER = "other"
+
+#: Assay methods that indicate the ligand was eluted from an MHC molecule and
+#: detected by mass spectrometry -- direct evidence of presentation.
+ELUTED_TERMS: Tuple[str, ...] = ("mass spectrometry", "coelution")
+
+#: Assay methods that measure structure or T-cell function rather than
+#: presentation or binding.
+NON_PRESENTATION_TERMS: Tuple[str, ...] = (
+    "x-ray crystallography",
+    "edman degradation",
+    "t cell",
+)
+
 # Composite key that defines a presentation unit.
 PRESENTATION_UNIT_KEY = ("Mapped_Protein_ID", "Epitope_Name", "MHC Restriction_Name")
 
@@ -78,6 +98,7 @@ OUTPUT_COLUMNS = (
     "Mapped_Protein_ID",
     "MHC Restriction_Name",
     "Record_Count",
+    "Assay_Modality",
 )
 
 _GENE_NAME_PATTERN = re.compile(r"GN=([^\s]+)")
@@ -276,6 +297,29 @@ def score_methods(methods: pd.Series) -> np.ndarray:
     return np.where(is_primary, METHOD_TIER_PRIMARY, METHOD_TIER_FALLBACK)
 
 
+def classify_modality(methods: pd.Series) -> np.ndarray:
+    """Label each record by the kind of evidence its assay provides.
+
+    ``eluted``
+        Mass spectrometry of ligands eluted from MHC molecules -- direct
+        evidence that the peptide was processed and presented.
+    ``binding``
+        In vitro binding assays -- evidence of affinity, not of presentation.
+    ``other``
+        Structural or functional assays that measure neither.
+    """
+    text = methods.astype("string").str.lower()
+
+    def matches(terms: Tuple[str, ...]) -> np.ndarray:
+        pattern = "|".join(re.escape(term) for term in terms)
+        return text.str.contains(pattern, regex=True, na=False).to_numpy()
+
+    labels = np.full(len(text), MODALITY_BINDING, dtype=object)
+    labels[matches(NON_PRESENTATION_TERMS)] = MODALITY_OTHER
+    labels[matches(ELUTED_TERMS)] = MODALITY_ELUTED
+    return labels
+
+
 def deduplicate(
     data: pd.DataFrame,
     sequence_column: str,
@@ -332,6 +376,7 @@ def run_pipeline(
     reference_shard: str = DEFAULT_REFERENCE_SHARD,
     fasta_path: Optional[Path] = None,
     allow_download: bool = True,
+    modality: str = MODALITY_ALL,
 ) -> Tuple[int, int]:
     """Run the full filtering pipeline and return the two output row counts."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -353,6 +398,16 @@ def run_pipeline(
     columns = locate_columns(data)
 
     data = filter_primary_records(data, columns)
+    data["Assay_Modality"] = classify_modality(data[columns["method"]])
+
+    if modality != MODALITY_ALL:
+        before = len(data)
+        data = data[data["Assay_Modality"] == modality].copy()
+        LOGGER.info(
+            "Restricted to %s evidence: %s -> %s records",
+            modality, f"{before:,}", f"{len(data):,}",
+        )
+
     data["Mapped_Protein_ID"] = resolve_protein_ids(
         data, columns["iri"], id_to_gene.keys()
     )
@@ -410,6 +465,16 @@ def parse_args(argv: Optional[list] = None) -> argparse.Namespace:
         "--no-download", action="store_true",
         help="Fail instead of downloading the proteome when it is missing",
     )
+    parser.add_argument(
+        "--modality", choices=[MODALITY_ALL, MODALITY_ELUTED, MODALITY_BINDING],
+        default=MODALITY_ALL,
+        help=(
+            "Restrict the gold tables to one kind of evidence. 'eluted' keeps "
+            "mass-spectrometry elution data (direct evidence of presentation); "
+            "'binding' keeps in vitro binding assays; 'all' (default) keeps every "
+            "record and only labels it in the Assay_Modality column"
+        ),
+    )
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose logging")
     return parser.parse_args(argv)
 
@@ -432,6 +497,7 @@ def main(argv: Optional[list] = None) -> int:
             reference_shard=args.reference_shard,
             fasta_path=args.fasta,
             allow_download=not args.no_download,
+            modality=args.modality,
         )
     except Exception:
         LOGGER.exception("Processing failed")
