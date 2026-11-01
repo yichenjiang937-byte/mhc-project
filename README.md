@@ -10,8 +10,10 @@ interactive map of antigen-presentation hotspots.
 2. **Visualizer tool** — reads those gold tables and renders, for any protein,
    peptide depth and HLA allele breadth along the amino-acid sequence.
 
-The companion paper was presented at **ICBBT 2026** (18th International
-Conference on Bioinformatics and Biomedical Technology, Suzhou, China).
+The companion paper is published in the *Proceedings of the 2026 18th
+International Conference on Bioinformatics and Biomedical Technology*
+(ICBBT 2026, Suzhou, China), ACM, pages 78–82:
+[doi:10.1145/3822521.3822541](https://doi.org/10.1145/3822521.3822541).
 
 ---
 
@@ -184,9 +186,14 @@ apparent hotspot survives removal of a few alleles.
                Analysis of Immunopeptidomic Data},
   author    = {Jiang, Yichen and Xie, Menghan and Yuan, Xuye and
                Meng, Jia and Cai, Yuheng},
-  booktitle = {Proceedings of the 18th International Conference on
-               Bioinformatics and Biomedical Technology (ICBBT)},
-  year      = {2026}
+  booktitle = {Proceedings of the 2026 18th International Conference on
+               Bioinformatics and Biomedical Technology},
+  pages     = {78--82},
+  year      = {2026},
+  month     = may,
+  address   = {Suzhou, China},
+  publisher = {Association for Computing Machinery},
+  doi       = {10.1145/3822521.3822541}
 }
 ```
 
