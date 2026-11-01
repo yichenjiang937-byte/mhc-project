@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# PyInstaller build output
+build/
+dist/
+*.spec
+
+# Data
+mhc_ligand_full_*.csv
+human_proteome.fasta
+human_proteome.fasta.gz
+*_HomoSapiens_Gold_Gene.csv
+gold_data.zip
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
